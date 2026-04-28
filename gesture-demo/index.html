@@ -13,54 +13,78 @@
             object-fit: cover;
             z-index: 0;
         }
+        #trigger-video {
+            position: fixed;
+            height: 33%;
+            width: auto;
+            aspect-ratio: 1/1;
+            top: 23.6%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            display: none;
+            object-fit: cover;
+        }
         #line-canvas {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: 1;
+            z-index: 2;
             pointer-events: none;
         }
         #man-img { position: fixed; width: 6%; z-index: 10; }
         #status { position: fixed; top: 10px; left: 10px; color: #fff; background: rgba(0,0,0,0.7); padding: 10px; z-index: 100; }
         
-        /* 右侧面板样式 */
-        #control-panel {
+        /* 触发按钮样式 */
+        .trigger-btn {
             position: fixed;
-            right: 0;
-            top: 0;
-            width: 250px;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 200;
-            padding: 20px;
-            color: #fff;
-            overflow-y: auto;
-        }
-        #control-panel h3 {
-            margin-bottom: 15px;
-            border-bottom: 1px solid #444;
-            padding-bottom: 10px;
-        }
-        .control-group {
-            margin-bottom: 20px;
-        }
-        .control-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        .control-group input[type="range"] {
-            width: 100%;
-            margin-bottom: 5px;
-        }
-        .control-group input[type="color"] {
-            width: 100%;
-            height: 35px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0);
             border: none;
             cursor: pointer;
+            z-index: 3;
+            transform: translate(-50%, -50%);
         }
-        .value-display {
+        .trigger-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .trigger-btn.active {
+            background: rgba(255, 0, 0, 0.5);
+        }
+        
+        /* 右下角调节面板 */
+        #mini-panel {
+            position: fixed;
+            right: 10px;
+            bottom: 10px;
+            width: 200px;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            padding: 15px;
+            color: #fff;
+            border-radius: 8px;
             font-size: 12px;
+        }
+        #mini-panel h4 {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+            font-size: 13px;
+        }
+        .mini-control {
+            margin-bottom: 10px;
+        }
+        .mini-control label {
+            display: block;
+            margin-bottom: 3px;
+        }
+        .mini-control input[type="range"] {
+            width: 100%;
+        }
+        .mini-value {
+            font-size: 10px;
             color: #aaa;
         }
     </style>
@@ -71,75 +95,41 @@
     <img src="white%20man.png_tmp" id="man-img">
     <div id="status">加载视频中...</div>
     
-    <!-- 控制面板 -->
-    <div id="control-panel">
-        <h3>调节面板</h3>
+    <!-- 触发按钮容器 -->
+    <div id="trigger-buttons"></div>
+    
+    <!-- 1号按钮触发视频 -->
+    <video id="trigger-video" loop muted></video>
+    
+    <!-- 右下角调节面板 -->
+    <div id="mini-panel">
+        <h4>调节面板</h4>
         
-        <div class="control-group">
-            <label>线条颜色</label>
-            <input type="color" id="line-color" value="#ffffff">
-        </div>
-        
-        <div class="control-group">
+        <div class="mini-control">
             <label>线条粗细</label>
-            <input type="range" id="line-width" min="1" max="10" value="3">
-            <span class="value-display" id="line-width-value">3px</span>
+            <input type="range" id="mini-line-width" min="1" max="10" value="3">
+            <span class="mini-value" id="mini-line-width-val">3px</span>
         </div>
         
-        <div class="control-group">
-            <label>小人大小</label>
-            <input type="range" id="man-size" min="1" max="15" value="6">
-            <span class="value-display" id="man-size-value">6%</span>
+        <div class="mini-control">
+            <label>视频大小</label>
+            <input type="range" id="mini-video-size" min="10" max="80" value="33">
+            <span class="mini-value" id="mini-video-size-val">33%</span>
         </div>
         
-        <div class="control-group">
-            <label>移动速度</label>
-            <input type="range" id="move-speed" min="1" max="10" value="2">
-            <span class="value-display" id="move-speed-value">0.02</span>
-        </div>
-        
-        <div class="control-group">
-            <label>线条垂直位置</label>
-            <input type="range" id="line-offset" min="-20" max="20" value="0">
-            <span class="value-display" id="line-offset-value">0</span>
-        </div>
-        
-        <div class="control-group">
-            <label>线条坡度（倾斜）</label>
-            <input type="range" id="line-slope" min="-30" max="30" value="0">
-            <span class="value-display" id="line-slope-value">0</span>
-        </div>
-        
-        <div class="control-group">
-            <label>线条占比大小</label>
-            <input type="range" id="line-scale" min="30" max="100" value="100">
-            <span class="value-display" id="line-scale-value">100%</span>
+        <div class="mini-control">
+            <label>视频垂直位置</label>
+            <input type="range" id="mini-video-top" min="0" max="80" value="23.6">
+            <span class="mini-value" id="mini-video-top-val">23.6%</span>
         </div>
     </div>
-
+    
     <script>
         const manImg = document.getElementById('man-img');
         const status = document.getElementById('status');
         const bgVideo = document.getElementById('bg-video');
         const canvas = document.getElementById('line-canvas');
         const ctx = canvas.getContext('2d');
-        
-        // 控制面板元素
-        const lineColorInput = document.getElementById('line-color');
-        const lineWidthInput = document.getElementById('line-width');
-        const manSizeInput = document.getElementById('man-size');
-        const moveSpeedInput = document.getElementById('move-speed');
-        const lineOffsetInput = document.getElementById('line-offset');
-        const lineSlopeInput = document.getElementById('line-slope');
-        const lineScaleInput = document.getElementById('line-scale');
-        
-        // 显示值元素
-        const lineWidthValue = document.getElementById('line-width-value');
-        const manSizeValue = document.getElementById('man-size-value');
-        const moveSpeedValue = document.getElementById('move-speed-value');
-        const lineOffsetValue = document.getElementById('line-offset-value');
-        const lineSlopeValue = document.getElementById('line-slope-value');
-        const lineScaleValue = document.getElementById('line-scale-value');
 
         // 设置canvas尺寸
         function resizeCanvas() {
@@ -297,6 +287,97 @@
 
         let pathIndex = 0;
         const keys = { w: false, a: false, s: false, d: false };
+        
+        // 1号按钮视频触发相关
+        const triggerVideo = document.getElementById('trigger-video');
+        let isTriggerVideoPlaying = false;
+        let canTriggerButton1 = false; // 是否可以触发1号按钮
+        
+        // 创建48个触发按钮
+        const triggerButtonsContainer = document.getElementById('trigger-buttons');
+        const buttonRanges = [];
+        
+        // 生成按钮范围：0号(0-0.5), 1号(0.5-1.5), 2号(1.5-2.5)... 47号(46.5-47.5)
+        for (let i = 0; i < 48; i++) {
+            let min, max;
+            if (i === 0) {
+                min = 0;
+                max = 0.5;
+            } else {
+                min = i - 0.5;
+                max = i + 0.5;
+            }
+            buttonRanges.push({ min, max, id: i });
+        }
+        
+        // 创建按钮元素
+        function createTriggerButtons() {
+            triggerButtonsContainer.innerHTML = '';
+            const pathPoints = getPathPoints();
+            const totalPoints = pathPoints.length;
+            
+            for (let i = 0; i < 48; i++) {
+                // 计算按钮在路径上的位置（均匀分布）
+                const pathPos = (i / 47) * (totalPoints - 1);
+                const pos = getPositionOnPath(pathPos);
+                
+                const btn = document.createElement('button');
+                btn.className = 'trigger-btn';
+                btn.dataset.id = i;
+                btn.style.left = (pos.x * window.innerWidth) + 'px';
+                btn.style.top = (pos.y * window.innerHeight) + 'px';
+                btn.title = `按钮${i}号 (${buttonRanges[i].min.toFixed(1)}-${buttonRanges[i].max.toFixed(1)})`;
+                
+                btn.addEventListener('click', () => {
+                    console.log(`触发按钮 ${i} 号，路径范围: ${buttonRanges[i].min.toFixed(1)} - ${buttonRanges[i].max.toFixed(1)}`);
+                    if (i === 1 && canTriggerButton1) {
+                        toggleTriggerVideo();
+                    } else {
+                        alert(`触发机关 ${i} 号！`);
+                    }
+                });
+                
+                triggerButtonsContainer.appendChild(btn);
+            }
+        }
+        
+        // 检查当前路径索引触发了哪个按钮
+        function checkTriggerButtons() {
+            for (let i = 0; i < 48; i++) {
+                const range = buttonRanges[i];
+                const btn = document.querySelector(`.trigger-btn[data-id="${i}"]`);
+                if (pathIndex >= range.min && pathIndex < range.max) {
+                    btn.classList.add('active');
+                    // 检查是否在1号按钮范围内
+                    if (i === 1) {
+                        canTriggerButton1 = true;
+                    }
+                } else {
+                    btn.classList.remove('active');
+                    if (i === 1) {
+                        canTriggerButton1 = false;
+                    }
+                }
+            }
+        }
+        
+        // 切换1号按钮触发视频
+        function toggleTriggerVideo() {
+            if (isTriggerVideoPlaying) {
+                // 关闭视频
+                triggerVideo.pause();
+                triggerVideo.style.display = 'none';
+                isTriggerVideoPlaying = false;
+            } else {
+                // 打开视频
+                triggerVideo.src = 'a/a2%20.mov';
+                triggerVideo.style.display = 'block';
+                triggerVideo.play().catch(e => console.log('视频播放失败:', e));
+                isTriggerVideoPlaying = true;
+            }
+        }
+        
+
 
         function updatePosition() {
             if (keys.w || keys.d) {
@@ -324,6 +405,9 @@
             }
             
             status.textContent = `WASD移动 | 路径位置: ${pathIndex.toFixed(2)}`;
+            
+            // 检查按钮触发状态
+            checkTriggerButtons();
 
             requestAnimationFrame(updatePosition);
         }
@@ -331,7 +415,17 @@
         // 事件监听
         document.addEventListener('keydown', e => {
             const key = e.key.toLowerCase();
-            if (keys.hasOwnProperty(key)) keys[key] = true;
+            
+            // 空格键触发1号按钮视频（当在1号按钮范围内时）
+            if (key === ' ' && canTriggerButton1) {
+                e.preventDefault();
+                toggleTriggerVideo();
+                return;
+            }
+            
+            if (keys.hasOwnProperty(key)) {
+                keys[key] = true;
+            }
         });
 
         document.addEventListener('keyup', e => {
@@ -339,51 +433,37 @@
             if (keys.hasOwnProperty(key)) keys[key] = false;
         });
 
-        window.addEventListener('resize', resizeCanvas);
-
-        // 控制面板事件
-        lineColorInput.addEventListener('input', (e) => {
-            config.lineColor = e.target.value;
-            drawLine();
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            createTriggerButtons();
         });
 
-        lineWidthInput.addEventListener('input', (e) => {
+        // 右下角面板控制
+        const miniLineWidth = document.getElementById('mini-line-width');
+        const miniVideoSize = document.getElementById('mini-video-size');
+        const miniVideoTop = document.getElementById('mini-video-top');
+        
+        miniLineWidth.addEventListener('input', (e) => {
             config.lineWidth = parseInt(e.target.value);
-            lineWidthValue.textContent = config.lineWidth + 'px';
+            document.getElementById('mini-line-width-val').textContent = config.lineWidth + 'px';
             drawLine();
         });
-
-        manSizeInput.addEventListener('input', (e) => {
-            config.manSize = parseInt(e.target.value);
-            manSizeValue.textContent = config.manSize + '%';
-            manImg.style.width = config.manSize + '%';
+        
+        miniVideoSize.addEventListener('input', (e) => {
+            const size = parseInt(e.target.value);
+            document.getElementById('mini-video-size-val').textContent = size + '%';
+            triggerVideo.style.height = size + '%';
         });
-
-        moveSpeedInput.addEventListener('input', (e) => {
-            config.speed = parseInt(e.target.value) * 0.01;
-            moveSpeedValue.textContent = config.speed.toFixed(2);
-        });
-
-        lineOffsetInput.addEventListener('input', (e) => {
-            config.lineOffset = parseInt(e.target.value);
-            lineOffsetValue.textContent = config.lineOffset;
-            drawLine();
-        });
-
-        lineSlopeInput.addEventListener('input', (e) => {
-            config.lineSlope = parseInt(e.target.value);
-            lineSlopeValue.textContent = config.lineSlope;
-            drawLine();
-        });
-
-        lineScaleInput.addEventListener('input', (e) => {
-            config.lineScale = parseInt(e.target.value);
-            lineScaleValue.textContent = config.lineScale + '%';
-            drawLine();
+        
+        miniVideoTop.addEventListener('input', (e) => {
+            const top = parseFloat(e.target.value);
+            document.getElementById('mini-video-top-val').textContent = top + '%';
+            triggerVideo.style.top = top + '%';
         });
 
         // 初始化
         resizeCanvas();
+        createTriggerButtons();
         const initialPos = getPositionOnPath(pathIndex);
         manImg.style.left = (initialPos.x * window.innerWidth - manImg.offsetWidth/2) + 'px';
         manImg.style.top = (initialPos.y * window.innerHeight - manImg.offsetHeight/2) + 'px';
