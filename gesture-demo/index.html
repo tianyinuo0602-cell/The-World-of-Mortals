@@ -294,6 +294,7 @@
         let canTriggerButton1 = false; // 是否可以触发1号按钮
         let videoState = 0; // 0: 未播放, 1: 播放a视频, 2: 播放b视频
         let isLongPressingB = false; // 是否正在长按播放b视频
+        let videoBCurrentTime = 0; // 记录B视频上次播放的中断位置
         
         // 创建48个触发按钮
         const triggerButtonsContainer = document.getElementById('trigger-buttons');
@@ -376,6 +377,8 @@
         function playVideoB() {
             triggerVideo.src = 'b/b2.mov';
             triggerVideo.style.display = 'block';
+            // 从上次中断位置继续播放
+            triggerVideo.currentTime = videoBCurrentTime;
             triggerVideo.play().catch(e => console.log('视频播放失败:', e));
             videoState = 2;
             isTriggerVideoPlaying = true;
@@ -410,6 +413,8 @@
         // 处理空格键松开事件
         function handleSpaceRelease() {
             if (videoState === 2 && isLongPressingB) {
+                // 记录B视频当前播放位置
+                videoBCurrentTime = triggerVideo.currentTime;
                 // 松开空格，从B视频跳回A视频
                 isLongPressingB = false;
                 playVideoA();
