@@ -26,13 +26,14 @@
 <body>
     <video id="bg-video" style="width:100%;height:100%"></video>
     <img src="line.png" id="line-img">
-    <img src="white man.png_tmp" id="man-img">
+    <img src="white%20man.png_tmp" id="man-img">
     <div id="status">加载视频中...</div>
 
     <script>
         const manImg = document.getElementById('man-img');
         const status = document.getElementById('status');
         const bgVideo = document.getElementById('bg-video');
+        const lineImg = document.getElementById('line-img');
 
         // 加载视频
         bgVideo.src = 'bg.mp4';
@@ -56,28 +57,103 @@
             status.textContent = '声音已开启';
         });
 
-        // 初始位置在屏幕中心
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2;
-        const speed = 0.1;
+        // 路径点数组 - 根据line.png的白线路径预定义
+        // 根据截图中的白线路径：从左开始，有多个上下弯曲和交叉
+        const pathPoints = [
+            {x: 0.05, y: 0.45},  // 起点 - 左侧
+            {x: 0.08, y: 0.35},  // 向上
+            {x: 0.10, y: 0.30},  // 顶部第一个峰
+            {x: 0.12, y: 0.35},  // 向下
+            {x: 0.14, y: 0.55},  // 向下到第一个谷底
+            {x: 0.16, y: 0.75},  // 继续向下
+            {x: 0.18, y: 0.85},  // 最低点
+            {x: 0.20, y: 0.75},  // 向上
+            {x: 0.22, y: 0.55},  // 向上交叉
+            {x: 0.24, y: 0.35},  // 向上到第二个峰
+            {x: 0.26, y: 0.20},  // 顶部
+            {x: 0.28, y: 0.25},  // 稍微向下
+            {x: 0.30, y: 0.45},  // 向下
+            {x: 0.32, y: 0.65},  // 继续向下
+            {x: 0.34, y: 0.85},  // 第二个谷底
+            {x: 0.36, y: 0.75},  // 向上
+            {x: 0.38, y: 0.55},  // 向上
+            {x: 0.40, y: 0.35},  // 向上到第三个峰
+            {x: 0.42, y: 0.20},  // 顶部
+            {x: 0.44, y: 0.30},  // 向下
+            {x: 0.46, y: 0.50},  // 向下
+            {x: 0.48, y: 0.70},  // 向下
+            {x: 0.50, y: 0.85},  // 第三个谷底
+            {x: 0.52, y: 0.70},  // 向上
+            {x: 0.54, y: 0.50},  // 向上交叉
+            {x: 0.56, y: 0.35},  // 向上
+            {x: 0.58, y: 0.25},  // 第四个峰
+            {x: 0.60, y: 0.35},  // 向下
+            {x: 0.62, y: 0.50},  // 向下
+            {x: 0.64, y: 0.65},  // 向下
+            {x: 0.66, y: 0.70},  // 谷底
+            {x: 0.68, y: 0.60},  // 向上
+            {x: 0.70, y: 0.50},  // 向上
+            {x: 0.75, y: 0.45},  // 平缓
+            {x: 0.80, y: 0.48},  // 小波浪
+            {x: 0.85, y: 0.45},  // 向下
+            {x: 0.90, y: 0.48},  // 向上
+            {x: 0.95, y: 0.50}   // 终点 - 右侧
+        ];
 
-        // 键盘状态
+        // 当前在路径上的位置索引 (0 到 pathPoints.length - 1)
+        let pathIndex = 0;
+        const speed = 0.05; // 沿路径移动的速度
+
+        // 键盘状态 - W/S 或 A/D 控制前后移动
         const keys = { w: false, a: false, s: false, d: false };
+
+        // 获取路径上某位置的坐标
+        function getPositionOnPath(index) {
+            const i = Math.max(0, Math.min(pathPoints.length - 1, Math.floor(index)));
+            const nextI = Math.min(pathPoints.length - 1, i + 1);
+            const t = index - i; // 插值因子
+            
+            const p1 = pathPoints[i];
+            const p2 = pathPoints[nextI];
+            
+            return {
+                x: p1.x + (p2.x - p1.x) * t,
+                y: p1.y + (p2.y - p1.y) * t
+            };
+        }
 
         // 更新人物位置
         function updatePosition() {
-            if (keys.w) y -= speed;
-            if (keys.s) y += speed;
-            if (keys.a) x -= speed;
-            if (keys.d) x += speed;
-
-            x = Math.max(50, Math.min(window.innerWidth - 50, x));
-            y = Math.max(50, Math.min(window.innerHeight - 50, y));
-
-            manImg.style.left = (x - manImg.offsetWidth/2) + 'px';
-            manImg.style.top = (y - manImg.offsetHeight/2) + 'px';
-
-            status.textContent = `WASD移动 | 位置: ${Math.round(x)},${Math.round(y)}`;
+            // W/D 向前，S/A 向后
+            if (keys.w || keys.d) {
+                pathIndex += speed;
+            }
+            if (keys.s || keys.a) {
+                pathIndex -= speed;
+            }
+            
+            // 限制在路径范围内
+            pathIndex = Math.max(0, Math.min(pathPoints.length - 1, pathIndex));
+            
+            // 获取当前路径位置
+            const pos = getPositionOnPath(pathIndex);
+            
+            // 转换为屏幕坐标
+            const screenX = pos.x * window.innerWidth;
+            const screenY = pos.y * window.innerHeight;
+            
+            // 更新人物位置
+            manImg.style.left = (screenX - manImg.offsetWidth/2) + 'px';
+            manImg.style.top = (screenY - manImg.offsetHeight/2) + 'px';
+            
+            // 根据移动方向翻转人物
+            if (keys.s || keys.a) {
+                manImg.style.transform = 'scaleX(-1)'; // 向左翻转
+            } else if (keys.w || keys.d) {
+                manImg.style.transform = 'scaleX(1)'; // 向右
+            }
+            
+            status.textContent = `WASD移动 | 路径位置: ${pathIndex.toFixed(2)}`;
 
             requestAnimationFrame(updatePosition);
         }
@@ -93,9 +169,13 @@
         });
 
         window.addEventListener('resize', () => {
-            x = Math.min(x, window.innerWidth - 50);
-            y = Math.min(y, window.innerHeight - 50);
+            // 窗口大小改变时重新计算位置
         });
+
+        // 初始化位置
+        const initialPos = getPositionOnPath(pathIndex);
+        manImg.style.left = (initialPos.x * window.innerWidth - manImg.offsetWidth/2) + 'px';
+        manImg.style.top = (initialPos.y * window.innerHeight - manImg.offsetHeight/2) + 'px';
 
         updatePosition();
 </script>
