@@ -2,7 +2,7 @@ import http.server
 import socketserver
 import os
 
-PORT = 8080
+PORT = 8081
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 with socketserver.TCPServer(("", PORT), http.server.SimpleHTTPRequestHandler) as httpd:
     print(f"http://localhost:{PORT}")
