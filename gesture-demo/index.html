@@ -103,6 +103,18 @@
             <input type="range" id="line-offset" min="-20" max="20" value="0">
             <span class="value-display" id="line-offset-value">0</span>
         </div>
+        
+        <div class="control-group">
+            <label>线条坡度（倾斜）</label>
+            <input type="range" id="line-slope" min="-30" max="30" value="0">
+            <span class="value-display" id="line-slope-value">0</span>
+        </div>
+        
+        <div class="control-group">
+            <label>线条占比大小</label>
+            <input type="range" id="line-scale" min="30" max="100" value="100">
+            <span class="value-display" id="line-scale-value">100%</span>
+        </div>
     </div>
 
     <script>
@@ -118,12 +130,16 @@
         const manSizeInput = document.getElementById('man-size');
         const moveSpeedInput = document.getElementById('move-speed');
         const lineOffsetInput = document.getElementById('line-offset');
+        const lineSlopeInput = document.getElementById('line-slope');
+        const lineScaleInput = document.getElementById('line-scale');
         
         // 显示值元素
         const lineWidthValue = document.getElementById('line-width-value');
         const manSizeValue = document.getElementById('man-size-value');
         const moveSpeedValue = document.getElementById('move-speed-value');
         const lineOffsetValue = document.getElementById('line-offset-value');
+        const lineSlopeValue = document.getElementById('line-slope-value');
+        const lineScaleValue = document.getElementById('line-scale-value');
 
         // 设置canvas尺寸
         function resizeCanvas() {
@@ -212,16 +228,33 @@
             lineWidth: 3,
             manSize: 6,
             speed: 0.02,
-            lineOffset: 0
+            lineOffset: 0,
+            lineSlope: 0,
+            lineScale: 100
         };
 
-        // 获取带偏移的路径点
+        // 获取带变换的路径点
         function getPathPoints() {
             const offset = config.lineOffset * 0.01;
-            return basePathPoints.map(p => ({
-                x: p.x,
-                y: p.y + offset
-            }));
+            const slope = config.lineSlope * 0.01; // 坡度因子
+            const scale = config.lineScale / 100; // 缩放比例
+            
+            // 计算中心点用于缩放
+            const centerY = 0.5;
+            
+            return basePathPoints.map(p => {
+                // 先应用缩放
+                let y = centerY + (p.y - centerY) * scale;
+                // 再应用坡度（x越大，y变化越大）
+                y += p.x * slope;
+                // 最后应用垂直偏移
+                y += offset;
+                
+                return {
+                    x: p.x,
+                    y: y
+                };
+            });
         }
 
         // 绘制白线
@@ -283,9 +316,10 @@
             manImg.style.left = (screenX - manImg.offsetWidth/2) + 'px';
             manImg.style.top = (screenY - manImg.offsetHeight/2) + 'px';
             
-            if (keys.s || keys.a) {
+            // D/W 前进时贴图向左（翻转），A/S 后退时贴图向右（不翻转）
+            if (keys.d || keys.w) {
                 manImg.style.transform = 'scaleX(-1)';
-            } else if (keys.w || keys.d) {
+            } else if (keys.a || keys.s) {
                 manImg.style.transform = 'scaleX(1)';
             }
             
@@ -333,6 +367,18 @@
         lineOffsetInput.addEventListener('input', (e) => {
             config.lineOffset = parseInt(e.target.value);
             lineOffsetValue.textContent = config.lineOffset;
+            drawLine();
+        });
+
+        lineSlopeInput.addEventListener('input', (e) => {
+            config.lineSlope = parseInt(e.target.value);
+            lineSlopeValue.textContent = config.lineSlope;
+            drawLine();
+        });
+
+        lineScaleInput.addEventListener('input', (e) => {
+            config.lineScale = parseInt(e.target.value);
+            lineScaleValue.textContent = config.lineScale + '%';
             drawLine();
         });
 
