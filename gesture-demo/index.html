@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>键盘控制移动</title>
     <style>
-        * { margin: 0; padding: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; }
         #bg-video {
             position: fixed;
@@ -20,8 +20,49 @@
             z-index: 1;
             pointer-events: none;
         }
-        #man-img { position: fixed; width: 3%; z-index: 10; }
+        #man-img { position: fixed; width: 6%; z-index: 10; }
         #status { position: fixed; top: 10px; left: 10px; color: #fff; background: rgba(0,0,0,0.7); padding: 10px; z-index: 100; }
+        
+        /* 右侧面板样式 */
+        #control-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 200;
+            padding: 20px;
+            color: #fff;
+            overflow-y: auto;
+        }
+        #control-panel h3 {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 35px;
+            border: none;
+            cursor: pointer;
+        }
+        .value-display {
+            font-size: 12px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
@@ -29,6 +70,40 @@
     <canvas id="line-canvas"></canvas>
     <img src="white%20man.png_tmp" id="man-img">
     <div id="status">加载视频中...</div>
+    
+    <!-- 控制面板 -->
+    <div id="control-panel">
+        <h3>调节面板</h3>
+        
+        <div class="control-group">
+            <label>线条颜色</label>
+            <input type="color" id="line-color" value="#ffffff">
+        </div>
+        
+        <div class="control-group">
+            <label>线条粗细</label>
+            <input type="range" id="line-width" min="1" max="10" value="3">
+            <span class="value-display" id="line-width-value">3px</span>
+        </div>
+        
+        <div class="control-group">
+            <label>小人大小</label>
+            <input type="range" id="man-size" min="1" max="15" value="6">
+            <span class="value-display" id="man-size-value">6%</span>
+        </div>
+        
+        <div class="control-group">
+            <label>移动速度</label>
+            <input type="range" id="move-speed" min="1" max="10" value="2">
+            <span class="value-display" id="move-speed-value">0.02</span>
+        </div>
+        
+        <div class="control-group">
+            <label>线条垂直位置</label>
+            <input type="range" id="line-offset" min="-20" max="20" value="0">
+            <span class="value-display" id="line-offset-value">0</span>
+        </div>
+    </div>
 
     <script>
         const manImg = document.getElementById('man-img');
@@ -36,6 +111,19 @@
         const bgVideo = document.getElementById('bg-video');
         const canvas = document.getElementById('line-canvas');
         const ctx = canvas.getContext('2d');
+        
+        // 控制面板元素
+        const lineColorInput = document.getElementById('line-color');
+        const lineWidthInput = document.getElementById('line-width');
+        const manSizeInput = document.getElementById('man-size');
+        const moveSpeedInput = document.getElementById('move-speed');
+        const lineOffsetInput = document.getElementById('line-offset');
+        
+        // 显示值元素
+        const lineWidthValue = document.getElementById('line-width-value');
+        const manSizeValue = document.getElementById('man-size-value');
+        const moveSpeedValue = document.getElementById('move-speed-value');
+        const lineOffsetValue = document.getElementById('line-offset-value');
 
         // 设置canvas尺寸
         function resizeCanvas() {
@@ -65,9 +153,8 @@
             status.textContent = '声音已开启';
         });
 
-        // 更复杂的线条路径 - 更多波浪和交叉
-        // 线条整体在画面中间偏下位置，占比较小
-        const pathPoints = [
+        // 路径点数组
+        const basePathPoints = [
             {x: 0.02, y: 0.50},
             {x: 0.04, y: 0.46},
             {x: 0.06, y: 0.42},
@@ -119,14 +206,30 @@
             {x: 0.98, y: 0.50}
         ];
 
-        // 线条粗细（像素）
-        const lineWidth = 3;
+        // 当前配置
+        let config = {
+            lineColor: '#ffffff',
+            lineWidth: 3,
+            manSize: 6,
+            speed: 0.02,
+            lineOffset: 0
+        };
+
+        // 获取带偏移的路径点
+        function getPathPoints() {
+            const offset = config.lineOffset * 0.01;
+            return basePathPoints.map(p => ({
+                x: p.x,
+                y: p.y + offset
+            }));
+        }
 
         // 绘制白线
         function drawLine() {
+            const pathPoints = getPathPoints();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = config.lineColor;
+            ctx.lineWidth = config.lineWidth;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
@@ -145,6 +248,7 @@
 
         // 获取路径上某位置的坐标
         function getPositionOnPath(index) {
+            const pathPoints = getPathPoints();
             const i = Math.max(0, Math.min(pathPoints.length - 1, Math.floor(index)));
             const nextI = Math.min(pathPoints.length - 1, i + 1);
             const t = index - i;
@@ -159,18 +263,17 @@
         }
 
         let pathIndex = 0;
-        const speed = 0.02;
         const keys = { w: false, a: false, s: false, d: false };
 
         function updatePosition() {
             if (keys.w || keys.d) {
-                pathIndex += speed;
+                pathIndex += config.speed;
             }
             if (keys.s || keys.a) {
-                pathIndex -= speed;
+                pathIndex -= config.speed;
             }
             
-            pathIndex = Math.max(0, Math.min(pathPoints.length - 1, pathIndex));
+            pathIndex = Math.max(0, Math.min(getPathPoints().length - 1, pathIndex));
             
             const pos = getPositionOnPath(pathIndex);
             
@@ -191,6 +294,7 @@
             requestAnimationFrame(updatePosition);
         }
 
+        // 事件监听
         document.addEventListener('keydown', e => {
             const key = e.key.toLowerCase();
             if (keys.hasOwnProperty(key)) keys[key] = true;
@@ -202,6 +306,35 @@
         });
 
         window.addEventListener('resize', resizeCanvas);
+
+        // 控制面板事件
+        lineColorInput.addEventListener('input', (e) => {
+            config.lineColor = e.target.value;
+            drawLine();
+        });
+
+        lineWidthInput.addEventListener('input', (e) => {
+            config.lineWidth = parseInt(e.target.value);
+            lineWidthValue.textContent = config.lineWidth + 'px';
+            drawLine();
+        });
+
+        manSizeInput.addEventListener('input', (e) => {
+            config.manSize = parseInt(e.target.value);
+            manSizeValue.textContent = config.manSize + '%';
+            manImg.style.width = config.manSize + '%';
+        });
+
+        moveSpeedInput.addEventListener('input', (e) => {
+            config.speed = parseInt(e.target.value) * 0.01;
+            moveSpeedValue.textContent = config.speed.toFixed(2);
+        });
+
+        lineOffsetInput.addEventListener('input', (e) => {
+            config.lineOffset = parseInt(e.target.value);
+            lineOffsetValue.textContent = config.lineOffset;
+            drawLine();
+        });
 
         // 初始化
         resizeCanvas();
