@@ -292,6 +292,8 @@
         const triggerVideo = document.getElementById('trigger-video');
         let isTriggerVideoPlaying = false;
         let canTriggerButton1 = false; // 是否可以触发1号按钮
+        let videoState = 0; // 0: 未播放, 1: 播放a视频, 2: 播放b视频
+        let isLongPressingB = false; // 是否正在长按播放b视频
         
         // 创建48个触发按钮
         const triggerButtonsContainer = document.getElementById('trigger-buttons');
@@ -331,7 +333,7 @@
                 btn.addEventListener('click', () => {
                     console.log(`触发按钮 ${i} 号，路径范围: ${buttonRanges[i].min.toFixed(1)} - ${buttonRanges[i].max.toFixed(1)}`);
                     if (i === 1 && canTriggerButton1) {
-                        toggleTriggerVideo();
+                        handleSpacePress();
                     } else {
                         alert(`触发机关 ${i} 号！`);
                     }
@@ -361,19 +363,56 @@
             }
         }
         
-        // 切换1号按钮触发视频
-        function toggleTriggerVideo() {
-            if (isTriggerVideoPlaying) {
-                // 关闭视频
-                triggerVideo.pause();
-                triggerVideo.style.display = 'none';
-                isTriggerVideoPlaying = false;
-            } else {
-                // 打开视频
-                triggerVideo.src = 'a/a2%20.mov';
-                triggerVideo.style.display = 'block';
-                triggerVideo.play().catch(e => console.log('视频播放失败:', e));
-                isTriggerVideoPlaying = true;
+        // 播放A视频 (a2.mov)
+        function playVideoA() {
+            triggerVideo.src = 'a/a2%20.mov';
+            triggerVideo.style.display = 'block';
+            triggerVideo.play().catch(e => console.log('视频播放失败:', e));
+            videoState = 1;
+            isTriggerVideoPlaying = true;
+        }
+        
+        // 播放B视频 (b2.mov)
+        function playVideoB() {
+            triggerVideo.src = 'b/b2.mov';
+            triggerVideo.style.display = 'block';
+            triggerVideo.play().catch(e => console.log('视频播放失败:', e));
+            videoState = 2;
+            isTriggerVideoPlaying = true;
+        }
+        
+        // 关闭视频
+        function closeTriggerVideo() {
+            triggerVideo.pause();
+            triggerVideo.style.display = 'none';
+            isTriggerVideoPlaying = false;
+            videoState = 0;
+            isLongPressingB = false;
+        }
+        
+        // 处理空格键按下事件
+        function handleSpacePress() {
+            if (!canTriggerButton1) return;
+            
+            if (videoState === 0) {
+                // 第一次空格，播放A视频
+                playVideoA();
+            } else if (videoState === 1) {
+                // 第二次空格，切换到B视频（长按模式）
+                isLongPressingB = true;
+                playVideoB();
+            } else if (videoState === 2) {
+                // 已经在播放B视频，继续播放（长按保持）
+                isLongPressingB = true;
+            }
+        }
+        
+        // 处理空格键松开事件
+        function handleSpaceRelease() {
+            if (videoState === 2 && isLongPressingB) {
+                // 松开空格，从B视频跳回A视频
+                isLongPressingB = false;
+                playVideoA();
             }
         }
         
@@ -404,7 +443,20 @@
                 manImg.style.transform = 'scaleX(1)';
             }
             
-            status.textContent = `WASD移动 | 路径位置: ${pathIndex.toFixed(2)}`;
+            let statusText = `WASD移动 | 路径位置: ${pathIndex.toFixed(2)}`;
+            if (canTriggerButton1) {
+                if (videoState === 0) {
+                    statusText += ' | [1号按钮] 按空格播放视频A';
+                } else if (videoState === 1) {
+                    statusText += ' | [1号按钮] 视频A播放中，再按空格切换视频B';
+                } else if (videoState === 2) {
+                    statusText += ' | [1号按钮] 视频B播放中（长按），松手返回视频A';
+                }
+                if (isTriggerVideoPlaying) {
+                    statusText += ' | Alt键退出';
+                }
+            }
+            status.textContent = statusText;
             
             // 检查按钮触发状态
             checkTriggerButtons();
@@ -416,10 +468,17 @@
         document.addEventListener('keydown', e => {
             const key = e.key.toLowerCase();
             
+            // Alt键退出视频播放
+            if (key === 'alt' && isTriggerVideoPlaying) {
+                e.preventDefault();
+                closeTriggerVideo();
+                return;
+            }
+            
             // 空格键触发1号按钮视频（当在1号按钮范围内时）
             if (key === ' ' && canTriggerButton1) {
                 e.preventDefault();
-                toggleTriggerVideo();
+                handleSpacePress();
                 return;
             }
             
@@ -431,6 +490,11 @@
         document.addEventListener('keyup', e => {
             const key = e.key.toLowerCase();
             if (keys.hasOwnProperty(key)) keys[key] = false;
+            
+            // 空格键松开处理
+            if (key === ' ') {
+                handleSpaceRelease();
+            }
         });
 
         window.addEventListener('resize', () => {
@@ -438,14 +502,42 @@
             createTriggerButtons();
         });
 
-        // 右下角面板控制
+        // 右下角面板控制 - 带本地存储
         const miniLineWidth = document.getElementById('mini-line-width');
         const miniVideoSize = document.getElementById('mini-video-size');
         const miniVideoTop = document.getElementById('mini-video-top');
         
+        // 从localStorage加载保存的设置
+        function loadSettings() {
+            const savedLineWidth = localStorage.getItem('lineWidth');
+            const savedVideoSize = localStorage.getItem('videoSize');
+            const savedVideoTop = localStorage.getItem('videoTop');
+            
+            if (savedLineWidth !== null) {
+                config.lineWidth = parseInt(savedLineWidth);
+                miniLineWidth.value = config.lineWidth;
+                document.getElementById('mini-line-width-val').textContent = config.lineWidth + 'px';
+            }
+            
+            if (savedVideoSize !== null) {
+                const size = parseInt(savedVideoSize);
+                miniVideoSize.value = size;
+                document.getElementById('mini-video-size-val').textContent = size + '%';
+                triggerVideo.style.height = size + '%';
+            }
+            
+            if (savedVideoTop !== null) {
+                const top = parseFloat(savedVideoTop);
+                miniVideoTop.value = top;
+                document.getElementById('mini-video-top-val').textContent = top + '%';
+                triggerVideo.style.top = top + '%';
+            }
+        }
+        
         miniLineWidth.addEventListener('input', (e) => {
             config.lineWidth = parseInt(e.target.value);
             document.getElementById('mini-line-width-val').textContent = config.lineWidth + 'px';
+            localStorage.setItem('lineWidth', config.lineWidth);
             drawLine();
         });
         
@@ -453,16 +545,20 @@
             const size = parseInt(e.target.value);
             document.getElementById('mini-video-size-val').textContent = size + '%';
             triggerVideo.style.height = size + '%';
+            localStorage.setItem('videoSize', size);
         });
         
         miniVideoTop.addEventListener('input', (e) => {
             const top = parseFloat(e.target.value);
             document.getElementById('mini-video-top-val').textContent = top + '%';
             triggerVideo.style.top = top + '%';
+            localStorage.setItem('videoTop', top);
         });
 
         // 初始化
         resizeCanvas();
+        loadSettings(); // 加载保存的设置
+        drawLine(); // 应用线条粗细
         createTriggerButtons();
         const initialPos = getPositionOnPath(pathIndex);
         manImg.style.left = (initialPos.x * window.innerWidth - manImg.offsetWidth/2) + 'px';
