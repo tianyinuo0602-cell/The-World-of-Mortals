@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>键盘控制移动</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body { background: #000; overflow: hidden; }
+        #bg-video {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 0;
+        }
+        #line-img {
+            position: fixed;
+            width: 100%; height: 100%;
+            object-fit: contain;
+            z-index: 1;
+        }
+        #man-img { position: fixed; width: 5%; z-index: 10; }
+        #status { position: fixed; top: 10px; left: 10px; color: #fff; background: rgba(0,0,0,0.7); padding: 10px; z-index: 100; }
+    </style>
+</head>
+<body>
+    <video id="bg-video" style="width:100%;height:100%"></video>
+    <img src="line.png" id="line-img">
+    <img src="red man2.png_tmp" id="man-img">
+    <div id="status">加载视频中...</div>
+
+    <script>
+        const manImg = document.getElementById('man-img');
+        const status = document.getElementById('status');
+        const bgVideo = document.getElementById('bg-video');
+
+        // 加载视频
+        bgVideo.src = 'bg.mp4';
+        bgVideo.loop = true;
+        bgVideo.muted = true; // 初始静音，自动播放需要
+
+        bgVideo.oncanplay = function() {
+            status.textContent = '视频已加载，点击开启声音';
+            bgVideo.play().catch(e => console.log('播放失败:', e));
+        };
+
+        bgVideo.onerror = function() {
+            status.textContent = '视频加载失败，尝试mov格式';
+            bgVideo.src = 'bg.mov';
+        };
+
+        // 点击开启声音
+        document.addEventListener('click', function() {
+            bgVideo.muted = false;
+            bgVideo.volume = 1;
+            status.textContent = '声音已开启';
+        });
+
+        // 初始位置在屏幕中心
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+        const speed = 0.1;
+
+        // 键盘状态
+        const keys = { w: false, a: false, s: false, d: false };
+
+        // 更新人物位置
+        function updatePosition() {
+            if (keys.w) y -= speed;
+            if (keys.s) y += speed;
+            if (keys.a) x -= speed;
+            if (keys.d) x += speed;
+
+            x = Math.max(50, Math.min(window.innerWidth - 50, x));
+            y = Math.max(50, Math.min(window.innerHeight - 50, y));
+
+            manImg.style.left = (x - manImg.offsetWidth/2) + 'px';
+            manImg.style.top = (y - manImg.offsetHeight/2) + 'px';
+
+            status.textContent = `WASD移动 | 位置: ${Math.round(x)},${Math.round(y)}`;
+
+            requestAnimationFrame(updatePosition);
+        }
+
+        document.addEventListener('keydown', e => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true;
+        });
+
+        document.addEventListener('keyup', e => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false;
+        });
+
+        window.addEventListener('resize', () => {
+            x = Math.min(x, window.innerWidth - 50);
+            y = Math.min(y, window.innerHeight - 50);
+        });
+
+        updatePosition();
+</script>
+<!-- hahahahah -->
+</body>
+</html>
