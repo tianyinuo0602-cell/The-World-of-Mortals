@@ -99,7 +99,13 @@
     <div id="trigger-buttons"></div>
     
     <!-- 1号按钮触发视频 -->
-    <video id="trigger-video" loop></video>
+    <video id="trigger-video" loop preload="auto"></video>
+    
+    <!-- 预加载视频元素（隐藏） -->
+    <video id="video-a1" loop preload="auto" style="display:none" src="a/a2%20.mov"></video>
+    <video id="video-b1" loop preload="auto" style="display:none" src="b/b2.mov"></video>
+    <video id="video-a2" loop preload="auto" style="display:none" src="a/a2(2).mov"></video>
+    <video id="video-b2" loop preload="auto" style="display:none" src="b/b2(2).mov"></video>
     
     <!-- 右下角调节面板 -->
     <div id="mini-panel">
@@ -290,6 +296,10 @@
         
         // 1号按钮视频触发相关
         const triggerVideo = document.getElementById('trigger-video');
+        const videoA1 = document.getElementById('video-a1');
+        const videoB1 = document.getElementById('video-b1');
+        const videoA2 = document.getElementById('video-a2');
+        const videoB2 = document.getElementById('video-b2');
         let isTriggerVideoPlaying = false;
         let canTriggerButton1 = false; // 是否可以触发1号按钮
         let canTriggerButton2 = false; // 是否可以触发2号按钮
@@ -298,6 +308,7 @@
         let videoBCurrentTime = 0; // 记录1号按钮B视频上次播放的中断位置
         let videoB2CurrentTime = 0; // 记录2号按钮B视频上次播放的中断位置
         let currentActiveButton = 0; // 当前激活的按钮（1或2）
+        let currentVideoElement = null; // 当前正在播放的视频元素
         
         // 创建48个触发按钮
         const triggerButtonsContainer = document.getElementById('trigger-buttons');
@@ -375,43 +386,64 @@
             }
         }
         
+        // 切换显示的视频元素（避免重新加载）
+        function switchVideoElement(newVideoElement) {
+            // 暂停当前播放的视频
+            if (currentVideoElement && currentVideoElement !== newVideoElement) {
+                currentVideoElement.pause();
+                currentVideoElement.style.display = 'none';
+            }
+            // 显示新视频
+            newVideoElement.style.display = 'block';
+            newVideoElement.style.position = 'fixed';
+            newVideoElement.style.height = triggerVideo.style.height || '33%';
+            newVideoElement.style.width = 'auto';
+            newVideoElement.style.aspectRatio = '1/1';
+            newVideoElement.style.top = triggerVideo.style.top || '23.6%';
+            newVideoElement.style.left = '50%';
+            newVideoElement.style.transform = 'translateX(-50%)';
+            newVideoElement.style.zIndex = '1';
+            newVideoElement.style.objectFit = 'cover';
+            newVideoElement.play().catch(e => console.log('视频播放失败:', e));
+            currentVideoElement = newVideoElement;
+        }
+
         // 播放A视频 (a2.mov 或 a2(2).mov)
         function playVideoA() {
-            if (currentActiveButton === 1) {
-                triggerVideo.src = 'a/a2%20.mov';
-            } else if (currentActiveButton === 2) {
-                triggerVideo.src = 'a/a2(2).mov';
-            }
-            triggerVideo.style.display = 'block';
-            triggerVideo.play().catch(e => console.log('视频播放失败:', e));
+            const targetVideo = currentActiveButton === 1 ? videoA1 : videoA2;
+            switchVideoElement(targetVideo);
             videoState = 1;
             isTriggerVideoPlaying = true;
         }
 
         // 播放B视频 (b2.mov 或 b2(2).mov)
         function playVideoB() {
+            const targetVideo = currentActiveButton === 1 ? videoB1 : videoB2;
+            // 从上次中断位置继续播放
             if (currentActiveButton === 1) {
-                triggerVideo.src = 'b/b2.mov';
-                // 从上次中断位置继续播放
-                triggerVideo.currentTime = videoBCurrentTime;
-            } else if (currentActiveButton === 2) {
-                triggerVideo.src = 'b/b2(2).mov';
-                // 从上次中断位置继续播放
-                triggerVideo.currentTime = videoB2CurrentTime;
+                videoB1.currentTime = videoBCurrentTime;
+            } else {
+                videoB2.currentTime = videoB2CurrentTime;
             }
-            triggerVideo.style.display = 'block';
-            triggerVideo.play().catch(e => console.log('视频播放失败:', e));
+            switchVideoElement(targetVideo);
             videoState = 2;
             isTriggerVideoPlaying = true;
         }
         
         // 关闭视频
         function closeTriggerVideo() {
-            triggerVideo.pause();
-            triggerVideo.style.display = 'none';
+            if (currentVideoElement) {
+                currentVideoElement.pause();
+                currentVideoElement.style.display = 'none';
+            }
+            videoA1.style.display = 'none';
+            videoB1.style.display = 'none';
+            videoA2.style.display = 'none';
+            videoB2.style.display = 'none';
             isTriggerVideoPlaying = false;
             videoState = 0;
             isLongPressingB = false;
+            currentActiveButton = 0;
         }
         
         // 处理空格键按下事件
@@ -437,9 +469,9 @@
             if (videoState === 2 && isLongPressingB) {
                 // 记录B视频当前播放位置（根据当前激活的按钮）
                 if (currentActiveButton === 1) {
-                    videoBCurrentTime = triggerVideo.currentTime;
+                    videoBCurrentTime = videoB1.currentTime;
                 } else if (currentActiveButton === 2) {
-                    videoB2CurrentTime = triggerVideo.currentTime;
+                    videoB2CurrentTime = videoB2.currentTime;
                 }
                 // 松开空格，从B视频跳回A视频
                 isLongPressingB = false;
@@ -557,14 +589,20 @@
                 const size = parseInt(savedVideoSize);
                 miniVideoSize.value = size;
                 document.getElementById('mini-video-size-val').textContent = size + '%';
-                triggerVideo.style.height = size + '%';
+                // 应用到所有视频元素
+                [triggerVideo, videoA1, videoB1, videoA2, videoB2].forEach(v => {
+                    if (v) v.style.height = size + '%';
+                });
             }
-            
+
             if (savedVideoTop !== null) {
                 const top = parseFloat(savedVideoTop);
                 miniVideoTop.value = top;
                 document.getElementById('mini-video-top-val').textContent = top + '%';
-                triggerVideo.style.top = top + '%';
+                // 应用到所有视频元素
+                [triggerVideo, videoA1, videoB1, videoA2, videoB2].forEach(v => {
+                    if (v) v.style.top = top + '%';
+                });
             }
         }
         
@@ -578,14 +616,20 @@
         miniVideoSize.addEventListener('input', (e) => {
             const size = parseInt(e.target.value);
             document.getElementById('mini-video-size-val').textContent = size + '%';
-            triggerVideo.style.height = size + '%';
+            // 应用到所有视频元素
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2].forEach(v => {
+                if (v) v.style.height = size + '%';
+            });
             localStorage.setItem('videoSize', size);
         });
-        
+
         miniVideoTop.addEventListener('input', (e) => {
             const top = parseFloat(e.target.value);
             document.getElementById('mini-video-top-val').textContent = top + '%';
-            triggerVideo.style.top = top + '%';
+            // 应用到所有视频元素
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2].forEach(v => {
+                if (v) v.style.top = top + '%';
+            });
             localStorage.setItem('videoTop', top);
         });
 
