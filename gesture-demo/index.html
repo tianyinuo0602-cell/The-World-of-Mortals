@@ -292,9 +292,12 @@
         const triggerVideo = document.getElementById('trigger-video');
         let isTriggerVideoPlaying = false;
         let canTriggerButton1 = false; // 是否可以触发1号按钮
+        let canTriggerButton2 = false; // 是否可以触发2号按钮
         let videoState = 0; // 0: 未播放, 1: 播放a视频, 2: 播放b视频
         let isLongPressingB = false; // 是否正在长按播放b视频
-        let videoBCurrentTime = 0; // 记录B视频上次播放的中断位置
+        let videoBCurrentTime = 0; // 记录1号按钮B视频上次播放的中断位置
+        let videoB2CurrentTime = 0; // 记录2号按钮B视频上次播放的中断位置
+        let currentActiveButton = 0; // 当前激活的按钮（1或2）
         
         // 创建48个触发按钮
         const triggerButtonsContainer = document.getElementById('trigger-buttons');
@@ -333,7 +336,8 @@
                 
                 btn.addEventListener('click', () => {
                     console.log(`触发按钮 ${i} 号，路径范围: ${buttonRanges[i].min.toFixed(1)} - ${buttonRanges[i].max.toFixed(1)}`);
-                    if (i === 1 && canTriggerButton1) {
+                    if ((i === 1 && canTriggerButton1) || (i === 2 && canTriggerButton2)) {
+                        currentActiveButton = i;
                         handleSpacePress();
                     } else {
                         alert(`触发机关 ${i} 号！`);
@@ -355,30 +359,47 @@
                     if (i === 1) {
                         canTriggerButton1 = true;
                     }
+                    // 检查是否在2号按钮范围内
+                    if (i === 2) {
+                        canTriggerButton2 = true;
+                    }
                 } else {
                     btn.classList.remove('active');
                     if (i === 1) {
                         canTriggerButton1 = false;
                     }
+                    if (i === 2) {
+                        canTriggerButton2 = false;
+                    }
                 }
             }
         }
         
-        // 播放A视频 (a2.mov)
+        // 播放A视频 (a2.mov 或 a2(2).mov)
         function playVideoA() {
-            triggerVideo.src = 'a/a2%20.mov';
+            if (currentActiveButton === 1) {
+                triggerVideo.src = 'a/a2%20.mov';
+            } else if (currentActiveButton === 2) {
+                triggerVideo.src = 'a/a2(2).mov';
+            }
             triggerVideo.style.display = 'block';
             triggerVideo.play().catch(e => console.log('视频播放失败:', e));
             videoState = 1;
             isTriggerVideoPlaying = true;
         }
-        
-        // 播放B视频 (b2.mov)
+
+        // 播放B视频 (b2.mov 或 b2(2).mov)
         function playVideoB() {
-            triggerVideo.src = 'b/b2.mov';
+            if (currentActiveButton === 1) {
+                triggerVideo.src = 'b/b2.mov';
+                // 从上次中断位置继续播放
+                triggerVideo.currentTime = videoBCurrentTime;
+            } else if (currentActiveButton === 2) {
+                triggerVideo.src = 'b/b2(2).mov';
+                // 从上次中断位置继续播放
+                triggerVideo.currentTime = videoB2CurrentTime;
+            }
             triggerVideo.style.display = 'block';
-            // 从上次中断位置继续播放
-            triggerVideo.currentTime = videoBCurrentTime;
             triggerVideo.play().catch(e => console.log('视频播放失败:', e));
             videoState = 2;
             isTriggerVideoPlaying = true;
@@ -395,8 +416,9 @@
         
         // 处理空格键按下事件
         function handleSpacePress() {
-            if (!canTriggerButton1) return;
-            
+            if (!canTriggerButton1 && !canTriggerButton2) return;
+            if (currentActiveButton === 0) return;
+
             if (videoState === 0) {
                 // 第一次空格，播放A视频
                 playVideoA();
@@ -409,12 +431,16 @@
                 isLongPressingB = true;
             }
         }
-        
+
         // 处理空格键松开事件
         function handleSpaceRelease() {
             if (videoState === 2 && isLongPressingB) {
-                // 记录B视频当前播放位置
-                videoBCurrentTime = triggerVideo.currentTime;
+                // 记录B视频当前播放位置（根据当前激活的按钮）
+                if (currentActiveButton === 1) {
+                    videoBCurrentTime = triggerVideo.currentTime;
+                } else if (currentActiveButton === 2) {
+                    videoB2CurrentTime = triggerVideo.currentTime;
+                }
                 // 松开空格，从B视频跳回A视频
                 isLongPressingB = false;
                 playVideoA();
@@ -449,13 +475,14 @@
             }
             
             let statusText = `WASD移动 | 路径位置: ${pathIndex.toFixed(2)}`;
-            if (canTriggerButton1) {
+            const activeBtn = canTriggerButton1 ? 1 : (canTriggerButton2 ? 2 : 0);
+            if (activeBtn > 0) {
                 if (videoState === 0) {
-                    statusText += ' | [1号按钮] 按空格播放视频A';
+                    statusText += ` | [${activeBtn}号按钮] 按空格播放视频A`;
                 } else if (videoState === 1) {
-                    statusText += ' | [1号按钮] 视频A播放中，再按空格切换视频B';
+                    statusText += ` | [${activeBtn}号按钮] 视频A播放中，再按空格切换视频B`;
                 } else if (videoState === 2) {
-                    statusText += ' | [1号按钮] 视频B播放中（长按），松手返回视频A';
+                    statusText += ` | [${activeBtn}号按钮] 视频B播放中（长按），松手返回视频A`;
                 }
                 if (isTriggerVideoPlaying) {
                     statusText += ' | Alt键退出';
@@ -480,9 +507,11 @@
                 return;
             }
             
-            // 空格键触发1号按钮视频（当在1号按钮范围内时）
-            if (key === ' ' && canTriggerButton1) {
+            // 空格键触发1号或2号按钮视频
+            if (key === ' ' && (canTriggerButton1 || canTriggerButton2)) {
                 e.preventDefault();
+                if (canTriggerButton1) currentActiveButton = 1;
+                else if (canTriggerButton2) currentActiveButton = 2;
                 handleSpacePress();
                 return;
             }
