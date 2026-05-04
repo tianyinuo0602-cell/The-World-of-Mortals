@@ -132,6 +132,8 @@
     <video id="video-b14" loop preload="auto" style="display:none" src="b/b14.mov"></video>
     <video id="video-a15" loop preload="auto" style="display:none" src="a/a15.mov"></video>
     <video id="video-b15" loop preload="auto" style="display:none" src="b/b15.mov"></video>
+    <video id="video-a16" loop preload="auto" style="display:none" src="a/a16.mov"></video>
+    <video id="video-b16" loop preload="auto" style="display:none" src="b/b16.mov"></video>
 
     <!-- 右下角调节面板 -->
     <div id="mini-panel">
@@ -191,24 +193,25 @@
             status.textContent = '声音已开启';
         });
 
-        // 路径点数组（16个按钮对应16个路径点）
+        // 路径点数组（17个按钮对应17个路径点 - Y轴数值缩小，线条更平缓）
         const basePathPoints = [
             {x: 0.02, y: 0.50},  // 0号按钮
-            {x: 0.08, y: 0.40},  // 1号按钮
-            {x: 0.14, y: 0.52},  // 2号按钮
+            {x: 0.08, y: 0.42},  // 1号按钮
+            {x: 0.14, y: 0.55},  // 2号按钮
             {x: 0.20, y: 0.60},  // 3号按钮
-            {x: 0.28, y: 0.38},  // 4号按钮
-            {x: 0.34, y: 0.54},  // 5号按钮
-            {x: 0.40, y: 0.66},  // 6号按钮
-            {x: 0.48, y: 0.36},  // 7号按钮
-            {x: 0.54, y: 0.52},  // 8号按钮
-            {x: 0.60, y: 0.64},  // 9号按钮
-            {x: 0.68, y: 0.40},  // 10号按钮
-            {x: 0.74, y: 0.56},  // 11号按钮
-            {x: 0.80, y: 0.52},  // 12号按钮
-            {x: 0.86, y: 0.48},  // 13号按钮
-            {x: 0.92, y: 0.52},  // 14号按钮
-            {x: 0.98, y: 0.50}   // 15号按钮
+            {x: 0.26, y: 0.40},  // 4号按钮
+            {x: 0.32, y: 0.58},  // 5号按钮
+            {x: 0.38, y: 0.62},  // 6号按钮
+            {x: 0.44, y: 0.38},  // 7号按钮
+            {x: 0.50, y: 0.52},  // 8号按钮
+            {x: 0.56, y: 0.60},  // 9号按钮
+            {x: 0.62, y: 0.42},  // 10号按钮
+            {x: 0.68, y: 0.55},  // 11号按钮
+            {x: 0.74, y: 0.48},  // 12号按钮
+            {x: 0.80, y: 0.54},  // 13号按钮
+            {x: 0.86, y: 0.44},  // 14号按钮
+            {x: 0.92, y: 0.50},  // 15号按钮
+            {x: 0.98, y: 0.48}   // 16号按钮
         ];
 
         // 当前配置
@@ -246,7 +249,39 @@
             });
         }
 
-        // 绘制白线
+        // 获取曲线上的点（使用Catmull-Rom样条转换为贝塞尔曲线）
+        function getCurvePoint(points, t) {
+            const n = points.length - 1;
+            
+            // 处理边界情况
+            if (t <= 0) return points[0];
+            if (t >= n) return points[n];
+            
+            const i = Math.min(Math.floor(t), n - 1);
+            const localT = t - i;
+            
+            const p0 = points[Math.max(0, i - 1)];
+            const p1 = points[i];
+            const p2 = points[Math.min(n, i + 1)];
+            const p3 = points[Math.min(n, i + 2)];
+            
+            // Catmull-Rom样条插值
+            const tt = localT * localT;
+            const ttt = tt * localT;
+            
+            return {
+                x: 0.5 * ((2 * p1.x) +
+                         (-p0.x + p2.x) * localT +
+                         (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * tt +
+                         (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * ttt),
+                y: 0.5 * ((2 * p1.y) +
+                         (-p0.y + p2.y) * localT +
+                         (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * tt +
+                         (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * ttt)
+            };
+        }
+
+        // 绘制白线（使用Catmull-Rom样条使线条圆滑且凌乱）
         function drawLine() {
             const pathPoints = getPathPoints();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -255,33 +290,43 @@
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
+            // 转换坐标函数（应用缩放）
+            const transform = (p) => ({
+                x: (centerX + (p.x - centerX) * lineScaleFactor) * canvas.width,
+                y: (centerY + (p.y - centerY) * lineScaleFactor) * canvas.height
+            });
+            
+            const points = pathPoints.map(transform);
+            
+            if (points.length < 2) return;
+            
             ctx.beginPath();
-            for (let i = 0; i < pathPoints.length; i++) {
-                const x = pathPoints[i].x * canvas.width;
-                const y = pathPoints[i].y * canvas.height;
+            
+            // 使用Catmull-Rom样条绘制圆滑曲线
+            const steps = 50; // 每段曲线的细分步数
+            
+            for (let i = 0; i <= (points.length - 1) * steps; i++) {
+                const t = i / steps;
+                const pos = getCurvePoint(points, t);
+                
                 if (i === 0) {
-                    ctx.moveTo(x, y);
+                    ctx.moveTo(pos.x, pos.y);
                 } else {
-                    ctx.lineTo(x, y);
+                    ctx.lineTo(pos.x, pos.y);
                 }
             }
+            
             ctx.stroke();
         }
 
-        // 获取路径上某位置的坐标
+        // 获取路径上某位置的坐标（使用与绘制相同的曲线计算）
         function getPositionOnPath(index) {
             const pathPoints = getPathPoints();
-            const i = Math.max(0, Math.min(pathPoints.length - 1, Math.floor(index)));
-            const nextI = Math.min(pathPoints.length - 1, i + 1);
-            const t = index - i;
             
-            const p1 = pathPoints[i];
-            const p2 = pathPoints[nextI];
+            // 使用相同的Catmull-Rom样条计算位置
+            const pos = getCurvePoint(pathPoints, index);
             
-            return {
-                x: p1.x + (p2.x - p1.x) * t,
-                y: p1.y + (p2.y - p1.y) * t
-            };
+            return pos;
         }
 
         let pathIndex = 0;
@@ -319,6 +364,8 @@
         const videoB14 = document.getElementById('video-b14');
         const videoA15 = document.getElementById('video-a15');
         const videoB15 = document.getElementById('video-b15');
+        const videoA16 = document.getElementById('video-a16');
+        const videoB16 = document.getElementById('video-b16');
         let isTriggerVideoPlaying = false;
         let canTriggerButton1 = false; // 是否可以触发1号按钮
         let canTriggerButton2 = false; // 是否可以触发2号按钮
@@ -335,6 +382,7 @@
         let canTriggerButton13 = false; // 是否可以触发13号按钮
         let canTriggerButton14 = false; // 是否可以触发14号按钮
         let canTriggerButton15 = false; // 是否可以触发15号按钮
+        let canTriggerButton16 = false; // 是否可以触发16号按钮
         let videoState = 0; // 0: 未播放, 1: 播放a视频, 2: 播放b视频
         let isLongPressingB = false; // 是否正在长按播放b视频
         let videoBCurrentTime = 0; // 记录1号按钮B视频上次播放的中断位置
@@ -352,15 +400,16 @@
         let videoB13CurrentTime = 0; // 记录13号按钮B视频上次播放的中断位置
         let videoB14CurrentTime = 0; // 记录14号按钮B视频上次播放的中断位置
         let videoB15CurrentTime = 0; // 记录15号按钮B视频上次播放的中断位置
-        let currentActiveButton = 0; // 当前激活的按钮（1-15）
+        let videoB16CurrentTime = 0; // 记录16号按钮B视频上次播放的中断位置
+        let currentActiveButton = 0; // 当前激活的按钮（1-16）
         let currentVideoElement = null; // 当前正在播放的视频元素
         
-        // 创建16个触发按钮
+        // 创建17个触发按钮（0-16）
         const triggerButtonsContainer = document.getElementById('trigger-buttons');
         const buttonRanges = [];
         
-        // 生成按钮范围：0号(0-0.5), 1号(0.5-1.5), 2号(1.5-2.5)... 15号(14.5-15.5)
-        for (let i = 0; i < 16; i++) {
+        // 生成按钮范围：0号(0-0.5), 1号(0.5-1.5), 2号(1.5-2.5)... 16号(15.5-16.5)
+        for (let i = 0; i < 17; i++) {
             let min, max;
             if (i === 0) {
                 min = 0;
@@ -372,25 +421,31 @@
             buttonRanges.push({ min, max, id: i });
         }
         
+        // 全局线条缩放比例（1.2倍放大）
+        const lineScaleFactor = 0.6;
+        const centerX = 0.5;
+        const centerY = 0.5;
+        
         // 创建按钮元素
         function createTriggerButtons() {
             triggerButtonsContainer.innerHTML = '';
-            const pathPoints = getPathPoints();
             
-            for (let i = 0; i < 16; i++) {
-                // 按钮位置直接对应路径点
-                const pos = pathPoints[i];
+            for (let i = 0; i < 17; i++) {
+                // 按钮位置使用曲线上的位置（与人物贴纸一致）
+                const pos = getPositionOnPath(i);
+                const scaledX = centerX + (pos.x - centerX) * lineScaleFactor;
+                const scaledY = centerY + (pos.y - centerY) * lineScaleFactor;
                 
                 const btn = document.createElement('button');
                 btn.className = 'trigger-btn';
                 btn.dataset.id = i;
-                btn.style.left = (pos.x * window.innerWidth) + 'px';
-                btn.style.top = (pos.y * window.innerHeight) + 'px';
+                btn.style.left = (scaledX * window.innerWidth) + 'px';
+                btn.style.top = (scaledY * window.innerHeight) + 'px';
                 btn.title = `按钮${i}号 (${buttonRanges[i].min.toFixed(1)}-${buttonRanges[i].max.toFixed(1)})`;
                 
                 btn.addEventListener('click', () => {
                     console.log(`触发按钮 ${i} 号，路径范围: ${buttonRanges[i].min.toFixed(1)} - ${buttonRanges[i].max.toFixed(1)}`);
-                    if ((i === 1 && canTriggerButton1) || (i === 2 && canTriggerButton2) || (i === 3 && canTriggerButton3) || (i === 4 && canTriggerButton4) || (i === 5 && canTriggerButton5) || (i === 6 && canTriggerButton6) || (i === 7 && canTriggerButton7) || (i === 8 && canTriggerButton8) || (i === 9 && canTriggerButton9) || (i === 10 && canTriggerButton10) || (i === 11 && canTriggerButton11) || (i === 12 && canTriggerButton12) || (i === 13 && canTriggerButton13) || (i === 14 && canTriggerButton14) || (i === 15 && canTriggerButton15)) {
+                    if ((i === 1 && canTriggerButton1) || (i === 2 && canTriggerButton2) || (i === 3 && canTriggerButton3) || (i === 4 && canTriggerButton4) || (i === 5 && canTriggerButton5) || (i === 6 && canTriggerButton6) || (i === 7 && canTriggerButton7) || (i === 8 && canTriggerButton8) || (i === 9 && canTriggerButton9) || (i === 10 && canTriggerButton10) || (i === 11 && canTriggerButton11) || (i === 12 && canTriggerButton12) || (i === 13 && canTriggerButton13) || (i === 14 && canTriggerButton14) || (i === 15 && canTriggerButton15) || (i === 16 && canTriggerButton16)) {
                         currentActiveButton = i;
                         handleSpacePress();
                     } else {
@@ -404,7 +459,7 @@
         
         // 检查当前路径索引触发了哪个按钮
         function checkTriggerButtons() {
-            for (let i = 0; i < 16; i++) {
+            for (let i = 0; i < 17; i++) {
                 const range = buttonRanges[i];
                 const btn = document.querySelector(`.trigger-btn[data-id="${i}"]`);
                 if (pathIndex >= range.min && pathIndex < range.max) {
@@ -425,6 +480,7 @@
                     if (i === 13) canTriggerButton13 = true;
                     if (i === 14) canTriggerButton14 = true;
                     if (i === 15) canTriggerButton15 = true;
+                    if (i === 16) canTriggerButton16 = true;
                 } else {
                     btn.classList.remove('active');
                     if (i === 1) canTriggerButton1 = false;
@@ -442,6 +498,7 @@
                     if (i === 13) canTriggerButton13 = false;
                     if (i === 14) canTriggerButton14 = false;
                     if (i === 15) canTriggerButton15 = false;
+                    if (i === 16) canTriggerButton16 = false;
                 }
             }
         }
@@ -501,13 +558,15 @@
                 targetVideo = videoA14;
             } else if (currentActiveButton === 15) {
                 targetVideo = videoA15;
+            } else if (currentActiveButton === 16) {
+                targetVideo = videoA16;
             }
             switchVideoElement(targetVideo);
             videoState = 1;
             isTriggerVideoPlaying = true;
         }
 
-        // 播放B视频 (b1-b15)
+        // 播放B视频 (b1-b16)
         function playVideoB() {
             let targetVideo;
             if (currentActiveButton === 1) {
@@ -555,6 +614,9 @@
             } else if (currentActiveButton === 15) {
                 targetVideo = videoB15;
                 videoB15.currentTime = videoB15CurrentTime;
+            } else if (currentActiveButton === 16) {
+                targetVideo = videoB16;
+                videoB16.currentTime = videoB16CurrentTime;
             }
             switchVideoElement(targetVideo);
             videoState = 2;
@@ -597,6 +659,8 @@
             videoB14.style.display = 'none';
             videoA15.style.display = 'none';
             videoB15.style.display = 'none';
+            videoA16.style.display = 'none';
+            videoB16.style.display = 'none';
             isTriggerVideoPlaying = false;
             videoState = 0;
             isLongPressingB = false;
@@ -605,7 +669,7 @@
         
         // 处理空格键按下事件
         function handleSpacePress() {
-            if (!canTriggerButton1 && !canTriggerButton2 && !canTriggerButton3 && !canTriggerButton4 && !canTriggerButton5 && !canTriggerButton6 && !canTriggerButton7 && !canTriggerButton8 && !canTriggerButton9 && !canTriggerButton10 && !canTriggerButton11 && !canTriggerButton12 && !canTriggerButton13 && !canTriggerButton14 && !canTriggerButton15) return;
+            if (!canTriggerButton1 && !canTriggerButton2 && !canTriggerButton3 && !canTriggerButton4 && !canTriggerButton5 && !canTriggerButton6 && !canTriggerButton7 && !canTriggerButton8 && !canTriggerButton9 && !canTriggerButton10 && !canTriggerButton11 && !canTriggerButton12 && !canTriggerButton13 && !canTriggerButton14 && !canTriggerButton15 && !canTriggerButton16) return;
             if (currentActiveButton === 0) return;
 
             if (videoState === 0) {
@@ -655,6 +719,8 @@
                     videoB14CurrentTime = videoB14.currentTime;
                 } else if (currentActiveButton === 15) {
                     videoB15CurrentTime = videoB15.currentTime;
+                } else if (currentActiveButton === 16) {
+                    videoB16CurrentTime = videoB16.currentTime;
                 }
                 // 松开空格，从B视频跳回A视频
                 isLongPressingB = false;
@@ -676,8 +742,11 @@
             
             const pos = getPositionOnPath(pathIndex);
             
-            const screenX = pos.x * window.innerWidth;
-            const screenY = pos.y * window.innerHeight;
+            // 应用与线条相同的缩放
+            const scaledX = centerX + (pos.x - centerX) * lineScaleFactor;
+            const scaledY = centerY + (pos.y - centerY) * lineScaleFactor;
+            const screenX = scaledX * window.innerWidth;
+            const screenY = scaledY * window.innerHeight;
             
             manImg.style.left = (screenX - manImg.offsetWidth/2) + 'px';
             manImg.style.top = (screenY - manImg.offsetHeight/2) + 'px';
@@ -690,7 +759,7 @@
             }
             
             let statusText = `WASD移动 | 路径位置: ${pathIndex.toFixed(2)}`;
-            const activeBtn = canTriggerButton1 ? 1 : (canTriggerButton2 ? 2 : (canTriggerButton3 ? 3 : (canTriggerButton4 ? 4 : (canTriggerButton5 ? 5 : (canTriggerButton6 ? 6 : (canTriggerButton7 ? 7 : (canTriggerButton8 ? 8 : (canTriggerButton9 ? 9 : (canTriggerButton10 ? 10 : (canTriggerButton11 ? 11 : (canTriggerButton12 ? 12 : (canTriggerButton13 ? 13 : (canTriggerButton14 ? 14 : (canTriggerButton15 ? 15 : 0))))))))))))));
+            const activeBtn = canTriggerButton1 ? 1 : (canTriggerButton2 ? 2 : (canTriggerButton3 ? 3 : (canTriggerButton4 ? 4 : (canTriggerButton5 ? 5 : (canTriggerButton6 ? 6 : (canTriggerButton7 ? 7 : (canTriggerButton8 ? 8 : (canTriggerButton9 ? 9 : (canTriggerButton10 ? 10 : (canTriggerButton11 ? 11 : (canTriggerButton12 ? 12 : (canTriggerButton13 ? 13 : (canTriggerButton14 ? 14 : (canTriggerButton15 ? 15 : (canTriggerButton16 ? 16 : 0)))))))))))))));
             if (activeBtn > 0) {
                 if (videoState === 0) {
                     statusText += ` | [${activeBtn}号按钮] 按空格播放视频A`;
@@ -723,7 +792,7 @@
             }
             
             // 空格键触发1号或2号按钮视频
-            if (key === ' ' && (canTriggerButton1 || canTriggerButton2 || canTriggerButton3 || canTriggerButton4 || canTriggerButton5 || canTriggerButton6 || canTriggerButton7 || canTriggerButton8 || canTriggerButton9 || canTriggerButton10 || canTriggerButton11 || canTriggerButton12 || canTriggerButton13 || canTriggerButton14 || canTriggerButton15)) {
+            if (key === ' ' && (canTriggerButton1 || canTriggerButton2 || canTriggerButton3 || canTriggerButton4 || canTriggerButton5 || canTriggerButton6 || canTriggerButton7 || canTriggerButton8 || canTriggerButton9 || canTriggerButton10 || canTriggerButton11 || canTriggerButton12 || canTriggerButton13 || canTriggerButton14 || canTriggerButton15 || canTriggerButton16)) {
                 e.preventDefault();
                 if (canTriggerButton1) currentActiveButton = 1;
                 else if (canTriggerButton2) currentActiveButton = 2;
@@ -740,6 +809,7 @@
                 else if (canTriggerButton13) currentActiveButton = 13;
                 else if (canTriggerButton14) currentActiveButton = 14;
                 else if (canTriggerButton15) currentActiveButton = 15;
+                else if (canTriggerButton16) currentActiveButton = 16;
                 handleSpacePress();
                 return;
             }
@@ -786,7 +856,7 @@
                 miniVideoSize.value = size;
                 document.getElementById('mini-video-size-val').textContent = size + '%';
             // 应用到所有视频元素
-[triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
                 if (v) v.style.height = size + '%';
             });
             }
@@ -796,7 +866,7 @@
                 miniVideoTop.value = top;
                 document.getElementById('mini-video-top-val').textContent = top + '%';
                 // 应用到所有视频元素
-            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
                 if (v) v.style.top = top + '%';
             });
             }
@@ -813,7 +883,7 @@
             const size = parseInt(e.target.value);
             document.getElementById('mini-video-size-val').textContent = size + '%';
             // 应用到所有视频元素
-            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
                 if (v) v.style.height = size + '%';
             });
             localStorage.setItem('videoSize', size);
@@ -823,7 +893,7 @@
             const top = parseFloat(e.target.value);
             document.getElementById('mini-video-top-val').textContent = top + '%';
             // 应用到所有视频元素
-            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
                 if (v) v.style.top = top + '%';
             });
             localStorage.setItem('videoTop', top);
@@ -835,8 +905,10 @@
         drawLine(); // 应用线条粗细
         createTriggerButtons();
         const initialPos = getPositionOnPath(pathIndex);
-        manImg.style.left = (initialPos.x * window.innerWidth - manImg.offsetWidth/2) + 'px';
-        manImg.style.top = (initialPos.y * window.innerHeight - manImg.offsetHeight/2) + 'px';
+        const initialScaledX = centerX + (initialPos.x - centerX) * lineScaleFactor;
+        const initialScaledY = centerY + (initialPos.y - centerY) * lineScaleFactor;
+        manImg.style.left = (initialScaledX * window.innerWidth - manImg.offsetWidth/2) + 'px';
+        manImg.style.top = (initialScaledY * window.innerHeight - manImg.offsetHeight/2) + 'px';
 
         updatePosition();
     </script>
