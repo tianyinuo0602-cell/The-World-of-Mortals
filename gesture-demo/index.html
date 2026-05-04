@@ -132,8 +132,6 @@
     <video id="video-b14" loop preload="auto" style="display:none" src="b/b14.mov"></video>
     <video id="video-a15" loop preload="auto" style="display:none" src="a/a15.mov"></video>
     <video id="video-b15" loop preload="auto" style="display:none" src="b/b15.mov"></video>
-    <video id="video-a16" loop preload="auto" style="display:none" src="a/a16.mov"></video>
-    <video id="video-b16" loop preload="auto" style="display:none" src="b/b16.mov"></video>
 
     <!-- 右下角调节面板 -->
     <div id="mini-panel">
@@ -193,57 +191,24 @@
             status.textContent = '声音已开启';
         });
 
-        // 路径点数组
+        // 路径点数组（16个按钮对应16个路径点）
         const basePathPoints = [
-            {x: 0.02, y: 0.50},
-            {x: 0.04, y: 0.46},
-            {x: 0.06, y: 0.42},
-            {x: 0.08, y: 0.40},
-            {x: 0.10, y: 0.42},
-            {x: 0.12, y: 0.46},
-            {x: 0.14, y: 0.52},
-            {x: 0.16, y: 0.58},
-            {x: 0.18, y: 0.62},
-            {x: 0.20, y: 0.60},
-            {x: 0.22, y: 0.54},
-            {x: 0.24, y: 0.48},
-            {x: 0.26, y: 0.42},
-            {x: 0.28, y: 0.38},
-            {x: 0.30, y: 0.40},
-            {x: 0.32, y: 0.46},
-            {x: 0.34, y: 0.54},
-            {x: 0.36, y: 0.62},
-            {x: 0.38, y: 0.68},
-            {x: 0.40, y: 0.66},
-            {x: 0.42, y: 0.58},
-            {x: 0.44, y: 0.50},
-            {x: 0.46, y: 0.42},
-            {x: 0.48, y: 0.36},
-            {x: 0.50, y: 0.38},
-            {x: 0.52, y: 0.44},
-            {x: 0.54, y: 0.52},
-            {x: 0.56, y: 0.60},
-            {x: 0.58, y: 0.66},
-            {x: 0.60, y: 0.64},
-            {x: 0.62, y: 0.56},
-            {x: 0.64, y: 0.48},
-            {x: 0.66, y: 0.42},
-            {x: 0.68, y: 0.40},
-            {x: 0.70, y: 0.44},
-            {x: 0.72, y: 0.50},
-            {x: 0.74, y: 0.56},
-            {x: 0.76, y: 0.58},
-            {x: 0.78, y: 0.56},
-            {x: 0.80, y: 0.52},
-            {x: 0.82, y: 0.48},
-            {x: 0.84, y: 0.46},
-            {x: 0.86, y: 0.48},
-            {x: 0.88, y: 0.50},
-            {x: 0.90, y: 0.52},
-            {x: 0.92, y: 0.52},
-            {x: 0.94, y: 0.50},
-            {x: 0.96, y: 0.48},
-            {x: 0.98, y: 0.50}
+            {x: 0.02, y: 0.50},  // 0号按钮
+            {x: 0.08, y: 0.40},  // 1号按钮
+            {x: 0.14, y: 0.52},  // 2号按钮
+            {x: 0.20, y: 0.60},  // 3号按钮
+            {x: 0.28, y: 0.38},  // 4号按钮
+            {x: 0.34, y: 0.54},  // 5号按钮
+            {x: 0.40, y: 0.66},  // 6号按钮
+            {x: 0.48, y: 0.36},  // 7号按钮
+            {x: 0.54, y: 0.52},  // 8号按钮
+            {x: 0.60, y: 0.64},  // 9号按钮
+            {x: 0.68, y: 0.40},  // 10号按钮
+            {x: 0.74, y: 0.56},  // 11号按钮
+            {x: 0.80, y: 0.52},  // 12号按钮
+            {x: 0.86, y: 0.48},  // 13号按钮
+            {x: 0.92, y: 0.52},  // 14号按钮
+            {x: 0.98, y: 0.50}   // 15号按钮
         ];
 
         // 当前配置
@@ -354,8 +319,6 @@
         const videoB14 = document.getElementById('video-b14');
         const videoA15 = document.getElementById('video-a15');
         const videoB15 = document.getElementById('video-b15');
-        const videoA16 = document.getElementById('video-a16');
-        const videoB16 = document.getElementById('video-b16');
         let isTriggerVideoPlaying = false;
         let canTriggerButton1 = false; // 是否可以触发1号按钮
         let canTriggerButton2 = false; // 是否可以触发2号按钮
@@ -372,7 +335,6 @@
         let canTriggerButton13 = false; // 是否可以触发13号按钮
         let canTriggerButton14 = false; // 是否可以触发14号按钮
         let canTriggerButton15 = false; // 是否可以触发15号按钮
-        let canTriggerButton16 = false; // 是否可以触发16号按钮
         let videoState = 0; // 0: 未播放, 1: 播放a视频, 2: 播放b视频
         let isLongPressingB = false; // 是否正在长按播放b视频
         let videoBCurrentTime = 0; // 记录1号按钮B视频上次播放的中断位置
@@ -390,16 +352,15 @@
         let videoB13CurrentTime = 0; // 记录13号按钮B视频上次播放的中断位置
         let videoB14CurrentTime = 0; // 记录14号按钮B视频上次播放的中断位置
         let videoB15CurrentTime = 0; // 记录15号按钮B视频上次播放的中断位置
-        let videoB16CurrentTime = 0; // 记录16号按钮B视频上次播放的中断位置
-        let currentActiveButton = 0; // 当前激活的按钮（1-16）
+        let currentActiveButton = 0; // 当前激活的按钮（1-15）
         let currentVideoElement = null; // 当前正在播放的视频元素
         
-        // 创建48个触发按钮
+        // 创建16个触发按钮
         const triggerButtonsContainer = document.getElementById('trigger-buttons');
         const buttonRanges = [];
         
-        // 生成按钮范围：0号(0-0.5), 1号(0.5-1.5), 2号(1.5-2.5)... 47号(46.5-47.5)
-        for (let i = 0; i < 48; i++) {
+        // 生成按钮范围：0号(0-0.5), 1号(0.5-1.5), 2号(1.5-2.5)... 15号(14.5-15.5)
+        for (let i = 0; i < 16; i++) {
             let min, max;
             if (i === 0) {
                 min = 0;
@@ -415,12 +376,10 @@
         function createTriggerButtons() {
             triggerButtonsContainer.innerHTML = '';
             const pathPoints = getPathPoints();
-            const totalPoints = pathPoints.length;
             
-            for (let i = 0; i < 48; i++) {
-                // 计算按钮在路径上的位置（均匀分布）
-                const pathPos = (i / 47) * (totalPoints - 1);
-                const pos = getPositionOnPath(pathPos);
+            for (let i = 0; i < 16; i++) {
+                // 按钮位置直接对应路径点
+                const pos = pathPoints[i];
                 
                 const btn = document.createElement('button');
                 btn.className = 'trigger-btn';
@@ -431,7 +390,7 @@
                 
                 btn.addEventListener('click', () => {
                     console.log(`触发按钮 ${i} 号，路径范围: ${buttonRanges[i].min.toFixed(1)} - ${buttonRanges[i].max.toFixed(1)}`);
-                    if ((i === 1 && canTriggerButton1) || (i === 2 && canTriggerButton2) || (i === 3 && canTriggerButton3) || (i === 4 && canTriggerButton4) || (i === 5 && canTriggerButton5) || (i === 6 && canTriggerButton6) || (i === 7 && canTriggerButton7) || (i === 8 && canTriggerButton8) || (i === 9 && canTriggerButton9) || (i === 10 && canTriggerButton10) || (i === 11 && canTriggerButton11) || (i === 12 && canTriggerButton12) || (i === 13 && canTriggerButton13) || (i === 14 && canTriggerButton14) || (i === 15 && canTriggerButton15) || (i === 16 && canTriggerButton16)) {
+                    if ((i === 1 && canTriggerButton1) || (i === 2 && canTriggerButton2) || (i === 3 && canTriggerButton3) || (i === 4 && canTriggerButton4) || (i === 5 && canTriggerButton5) || (i === 6 && canTriggerButton6) || (i === 7 && canTriggerButton7) || (i === 8 && canTriggerButton8) || (i === 9 && canTriggerButton9) || (i === 10 && canTriggerButton10) || (i === 11 && canTriggerButton11) || (i === 12 && canTriggerButton12) || (i === 13 && canTriggerButton13) || (i === 14 && canTriggerButton14) || (i === 15 && canTriggerButton15)) {
                         currentActiveButton = i;
                         handleSpacePress();
                     } else {
@@ -445,125 +404,44 @@
         
         // 检查当前路径索引触发了哪个按钮
         function checkTriggerButtons() {
-            for (let i = 0; i < 48; i++) {
+            for (let i = 0; i < 16; i++) {
                 const range = buttonRanges[i];
                 const btn = document.querySelector(`.trigger-btn[data-id="${i}"]`);
                 if (pathIndex >= range.min && pathIndex < range.max) {
                     btn.classList.add('active');
-                    // 检查是否在1号按钮范围内
-                    if (i === 1) {
-                        canTriggerButton1 = true;
-                    }
-                    // 检查是否在2号按钮范围内
-                    if (i === 2) {
-                        canTriggerButton2 = true;
-                    }
-                    // 检查是否在3号按钮范围内
-                    if (i === 3) {
-                        canTriggerButton3 = true;
-                    }
-                    // 检查是否在4号按钮范围内
-                    if (i === 4) {
-                        canTriggerButton4 = true;
-                    }
-                    // 检查是否在5号按钮范围内
-                    if (i === 5) {
-                        canTriggerButton5 = true;
-                    }
-                    // 检查是否在6号按钮范围内
-                    if (i === 6) {
-                        canTriggerButton6 = true;
-                    }
-                    // 检查是否在7号按钮范围内
-                    if (i === 7) {
-                        canTriggerButton7 = true;
-                    }
-                    // 检查是否在8号按钮范围内
-                    if (i === 8) {
-                        canTriggerButton8 = true;
-                    }
-                    // 检查是否在9号按钮范围内
-                    if (i === 9) {
-                        canTriggerButton9 = true;
-                    }
-                    // 检查是否在10号按钮范围内
-                    if (i === 10) {
-                        canTriggerButton10 = true;
-                    }
-                    // 检查是否在11号按钮范围内
-                    if (i === 11) {
-                        canTriggerButton11 = true;
-                    }
-                    // 检查是否在12号按钮范围内
-                    if (i === 12) {
-                        canTriggerButton12 = true;
-                    }
-                    // 检查是否在13号按钮范围内
-                    if (i === 13) {
-                        canTriggerButton13 = true;
-                    }
-                    // 检查是否在14号按钮范围内
-                    if (i === 14) {
-                        canTriggerButton14 = true;
-                    }
-                    // 检查是否在15号按钮范围内
-                    if (i === 15) {
-                        canTriggerButton15 = true;
-                    }
-                    // 检查是否在16号按钮范围内
-                    if (i === 16) {
-                        canTriggerButton16 = true;
-                    }
+                    // 检查是否在1-15号按钮范围内
+                    if (i === 1) canTriggerButton1 = true;
+                    if (i === 2) canTriggerButton2 = true;
+                    if (i === 3) canTriggerButton3 = true;
+                    if (i === 4) canTriggerButton4 = true;
+                    if (i === 5) canTriggerButton5 = true;
+                    if (i === 6) canTriggerButton6 = true;
+                    if (i === 7) canTriggerButton7 = true;
+                    if (i === 8) canTriggerButton8 = true;
+                    if (i === 9) canTriggerButton9 = true;
+                    if (i === 10) canTriggerButton10 = true;
+                    if (i === 11) canTriggerButton11 = true;
+                    if (i === 12) canTriggerButton12 = true;
+                    if (i === 13) canTriggerButton13 = true;
+                    if (i === 14) canTriggerButton14 = true;
+                    if (i === 15) canTriggerButton15 = true;
                 } else {
                     btn.classList.remove('active');
-                    if (i === 1) {
-                        canTriggerButton1 = false;
-                    }
-                    if (i === 2) {
-                        canTriggerButton2 = false;
-                    }
-                    if (i === 3) {
-                        canTriggerButton3 = false;
-                    }
-                    if (i === 4) {
-                        canTriggerButton4 = false;
-                    }
-                    if (i === 5) {
-                        canTriggerButton5 = false;
-                    }
-                    if (i === 6) {
-                        canTriggerButton6 = false;
-                    }
-                    if (i === 7) {
-                        canTriggerButton7 = false;
-                    }
-                    if (i === 8) {
-                        canTriggerButton8 = false;
-                    }
-                    if (i === 9) {
-                        canTriggerButton9 = false;
-                    }
-                    if (i === 10) {
-                        canTriggerButton10 = false;
-                    }
-                    if (i === 11) {
-                        canTriggerButton11 = false;
-                    }
-                    if (i === 12) {
-                        canTriggerButton12 = false;
-                    }
-                    if (i === 13) {
-                        canTriggerButton13 = false;
-                    }
-                    if (i === 14) {
-                        canTriggerButton14 = false;
-                    }
-                    if (i === 15) {
-                        canTriggerButton15 = false;
-                    }
-                    if (i === 16) {
-                        canTriggerButton16 = false;
-                    }
+                    if (i === 1) canTriggerButton1 = false;
+                    if (i === 2) canTriggerButton2 = false;
+                    if (i === 3) canTriggerButton3 = false;
+                    if (i === 4) canTriggerButton4 = false;
+                    if (i === 5) canTriggerButton5 = false;
+                    if (i === 6) canTriggerButton6 = false;
+                    if (i === 7) canTriggerButton7 = false;
+                    if (i === 8) canTriggerButton8 = false;
+                    if (i === 9) canTriggerButton9 = false;
+                    if (i === 10) canTriggerButton10 = false;
+                    if (i === 11) canTriggerButton11 = false;
+                    if (i === 12) canTriggerButton12 = false;
+                    if (i === 13) canTriggerButton13 = false;
+                    if (i === 14) canTriggerButton14 = false;
+                    if (i === 15) canTriggerButton15 = false;
                 }
             }
         }
@@ -623,15 +501,13 @@
                 targetVideo = videoA14;
             } else if (currentActiveButton === 15) {
                 targetVideo = videoA15;
-            } else if (currentActiveButton === 16) {
-                targetVideo = videoA16;
             }
             switchVideoElement(targetVideo);
             videoState = 1;
             isTriggerVideoPlaying = true;
         }
 
-        // 播放B视频 (b2.mov, b2(2).mov, b3.mov, b4.mov, b5.mov, b6.mov, b7.mov, b8.mov, b9.mov, b10.mov, b11.mov, b12.mov, b13.mov, b14.mov 或 b15.mov)
+        // 播放B视频 (b1-b15)
         function playVideoB() {
             let targetVideo;
             if (currentActiveButton === 1) {
@@ -679,9 +555,6 @@
             } else if (currentActiveButton === 15) {
                 targetVideo = videoB15;
                 videoB15.currentTime = videoB15CurrentTime;
-            } else if (currentActiveButton === 16) {
-                targetVideo = videoB16;
-                videoB16.currentTime = videoB16CurrentTime;
             }
             switchVideoElement(targetVideo);
             videoState = 2;
@@ -724,8 +597,6 @@
             videoB14.style.display = 'none';
             videoA15.style.display = 'none';
             videoB15.style.display = 'none';
-            videoA16.style.display = 'none';
-            videoB16.style.display = 'none';
             isTriggerVideoPlaying = false;
             videoState = 0;
             isLongPressingB = false;
@@ -734,7 +605,7 @@
         
         // 处理空格键按下事件
         function handleSpacePress() {
-            if (!canTriggerButton1 && !canTriggerButton2 && !canTriggerButton3 && !canTriggerButton4 && !canTriggerButton5 && !canTriggerButton6 && !canTriggerButton7 && !canTriggerButton8 && !canTriggerButton9 && !canTriggerButton10 && !canTriggerButton11 && !canTriggerButton12 && !canTriggerButton13 && !canTriggerButton14 && !canTriggerButton15 && !canTriggerButton16) return;
+            if (!canTriggerButton1 && !canTriggerButton2 && !canTriggerButton3 && !canTriggerButton4 && !canTriggerButton5 && !canTriggerButton6 && !canTriggerButton7 && !canTriggerButton8 && !canTriggerButton9 && !canTriggerButton10 && !canTriggerButton11 && !canTriggerButton12 && !canTriggerButton13 && !canTriggerButton14 && !canTriggerButton15) return;
             if (currentActiveButton === 0) return;
 
             if (videoState === 0) {
@@ -784,8 +655,6 @@
                     videoB14CurrentTime = videoB14.currentTime;
                 } else if (currentActiveButton === 15) {
                     videoB15CurrentTime = videoB15.currentTime;
-                } else if (currentActiveButton === 16) {
-                    videoB16CurrentTime = videoB16.currentTime;
                 }
                 // 松开空格，从B视频跳回A视频
                 isLongPressingB = false;
@@ -821,7 +690,7 @@
             }
             
             let statusText = `WASD移动 | 路径位置: ${pathIndex.toFixed(2)}`;
-            const activeBtn = canTriggerButton1 ? 1 : (canTriggerButton2 ? 2 : (canTriggerButton3 ? 3 : (canTriggerButton4 ? 4 : (canTriggerButton5 ? 5 : (canTriggerButton6 ? 6 : (canTriggerButton7 ? 7 : (canTriggerButton8 ? 8 : (canTriggerButton9 ? 9 : (canTriggerButton10 ? 10 : (canTriggerButton11 ? 11 : (canTriggerButton12 ? 12 : (canTriggerButton13 ? 13 : (canTriggerButton14 ? 14 : (canTriggerButton15 ? 15 : (canTriggerButton16 ? 16 : 0)))))))))))))));
+            const activeBtn = canTriggerButton1 ? 1 : (canTriggerButton2 ? 2 : (canTriggerButton3 ? 3 : (canTriggerButton4 ? 4 : (canTriggerButton5 ? 5 : (canTriggerButton6 ? 6 : (canTriggerButton7 ? 7 : (canTriggerButton8 ? 8 : (canTriggerButton9 ? 9 : (canTriggerButton10 ? 10 : (canTriggerButton11 ? 11 : (canTriggerButton12 ? 12 : (canTriggerButton13 ? 13 : (canTriggerButton14 ? 14 : (canTriggerButton15 ? 15 : 0))))))))))))));
             if (activeBtn > 0) {
                 if (videoState === 0) {
                     statusText += ` | [${activeBtn}号按钮] 按空格播放视频A`;
@@ -854,7 +723,7 @@
             }
             
             // 空格键触发1号或2号按钮视频
-            if (key === ' ' && (canTriggerButton1 || canTriggerButton2 || canTriggerButton3 || canTriggerButton4 || canTriggerButton5 || canTriggerButton6 || canTriggerButton7 || canTriggerButton8 || canTriggerButton9 || canTriggerButton10 || canTriggerButton11 || canTriggerButton12 || canTriggerButton13 || canTriggerButton14 || canTriggerButton15 || canTriggerButton16)) {
+            if (key === ' ' && (canTriggerButton1 || canTriggerButton2 || canTriggerButton3 || canTriggerButton4 || canTriggerButton5 || canTriggerButton6 || canTriggerButton7 || canTriggerButton8 || canTriggerButton9 || canTriggerButton10 || canTriggerButton11 || canTriggerButton12 || canTriggerButton13 || canTriggerButton14 || canTriggerButton15)) {
                 e.preventDefault();
                 if (canTriggerButton1) currentActiveButton = 1;
                 else if (canTriggerButton2) currentActiveButton = 2;
@@ -871,7 +740,6 @@
                 else if (canTriggerButton13) currentActiveButton = 13;
                 else if (canTriggerButton14) currentActiveButton = 14;
                 else if (canTriggerButton15) currentActiveButton = 15;
-                else if (canTriggerButton16) currentActiveButton = 16;
                 handleSpacePress();
                 return;
             }
@@ -918,7 +786,7 @@
                 miniVideoSize.value = size;
                 document.getElementById('mini-video-size-val').textContent = size + '%';
             // 应用到所有视频元素
-            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
+[triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
                 if (v) v.style.height = size + '%';
             });
             }
@@ -928,7 +796,7 @@
                 miniVideoTop.value = top;
                 document.getElementById('mini-video-top-val').textContent = top + '%';
                 // 应用到所有视频元素
-            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
                 if (v) v.style.top = top + '%';
             });
             }
@@ -945,7 +813,7 @@
             const size = parseInt(e.target.value);
             document.getElementById('mini-video-size-val').textContent = size + '%';
             // 应用到所有视频元素
-            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
                 if (v) v.style.height = size + '%';
             });
             localStorage.setItem('videoSize', size);
@@ -955,7 +823,7 @@
             const top = parseFloat(e.target.value);
             document.getElementById('mini-video-top-val').textContent = top + '%';
             // 应用到所有视频元素
-            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15, videoA16, videoB16].forEach(v => {
+            [triggerVideo, videoA1, videoB1, videoA2, videoB2, videoA3, videoB3, videoA4, videoB4, videoA5, videoB5, videoA6, videoB6, videoA7, videoB7, videoA8, videoB8, videoA9, videoB9, videoA10, videoB10, videoA11, videoB11, videoA12, videoB12, videoA13, videoB13, videoA14, videoB14, videoA15, videoB15].forEach(v => {
                 if (v) v.style.top = top + '%';
             });
             localStorage.setItem('videoTop', top);
